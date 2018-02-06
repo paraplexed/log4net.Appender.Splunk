@@ -11,6 +11,7 @@ namespace log4net.Appender.Splunk
         public string ServerUrl { get; set; }
         public string Token { get; set; }
         public int RetriesOnError { get; set; } = 0;
+        public string SourceType { get; set; } = "_json";
 
         /// <summary>
         /// This appender requires a <see cref="Layout"/> to be set.
@@ -30,7 +31,7 @@ namespace log4net.Appender.Splunk
             _hecSender = new HttpEventCollectorSender(
                 new Uri(ServerUrl),                                                                 // Splunk HEC URL
                 Token,                                                                              // Splunk HEC token *GUID*
-                new HttpEventCollectorEventInfo.Metadata(null, null, "_json", GetMachineName()),    // Metadata
+                new HttpEventCollectorEventInfo.Metadata(null, null, SourceType, GetMachineName()), // Metadata
                 HttpEventCollectorSender.SendMode.Sequential,                                       // Sequential sending to keep message in order
                 0,                                                                                  // BatchInterval - Set to 0 to disable
                 0,                                                                                  // BatchSizeBytes - Set to 0 to disable
@@ -76,7 +77,7 @@ namespace log4net.Appender.Splunk
             }
 
             // Build metaData
-            var metaData = new HttpEventCollectorEventInfo.Metadata(null, loggingEvent.LoggerName, "_json", GetMachineName());
+            var metaData = new HttpEventCollectorEventInfo.Metadata(null, loggingEvent.LoggerName, SourceType, GetMachineName());
 
             // Build properties object
             var properties = new Dictionary<String, object>();

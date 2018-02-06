@@ -30,20 +30,20 @@ using System.Threading.Tasks;
 namespace Splunk.Logging
 {
     /// <summary>
-    /// HTTP event collector client side implementation that collects, serializes and send 
+    /// HTTP event collector client side implementation that collects, serializes and send
     /// events to Splunk HTTP event collector endpoint. This class shouldn't be used directly
     /// by user applications.
     /// </summary>
     /// <remarks>
     /// * HttpEventCollectorSender is thread safe and Send(...) method may be called from
     /// different threads.
-    /// * Events are sending asynchronously and Send(...) method doesn't 
+    /// * Events are sending asynchronously and Send(...) method doesn't
     /// block the caller code.
-    /// * HttpEventCollectorSender has an ability to plug middleware components that act 
+    /// * HttpEventCollectorSender has an ability to plug middleware components that act
     /// before posting data.
     /// For example:
     /// <code>
-    /// new HttpEventCollectorSender(uri: ..., token: ..., 
+    /// new HttpEventCollectorSender(uri: ..., token: ...,
     ///     middleware: (request, next) => {
     ///         // preprocess request
     ///         var response = next(request); // post data
@@ -59,7 +59,7 @@ namespace Splunk.Logging
     public class HttpEventCollectorSender : IDisposable
     {
         /// <summary>
-        /// Post request delegate. 
+        /// Post request delegate.
         /// </summary>
         /// <param name="request">HTTP request.</param>
         /// <returns>Server HTTP response.</returns>
@@ -89,9 +89,9 @@ namespace Splunk.Logging
         public const int DefaultBatchCount = 10;
 
         /// <summary>
-        /// Sender operation mode. Parallel means that all HTTP requests are 
+        /// Sender operation mode. Parallel means that all HTTP requests are
         /// asynchronous and may be indexed out of order. Sequential mode guarantees
-        /// sequential order of the indexed events. 
+        /// sequential order of the indexed events.
         /// </summary>
         public enum SendMode
         {
@@ -107,7 +107,7 @@ namespace Splunk.Logging
         private string token; // authorization token
         private JsonSerializer serializer;
 
-        // events batching properties and collection 
+        // events batching properties and collection
         private int batchInterval = 0;
         private int batchSizeBytes = 0;
         private int batchSizeCount = 0;
@@ -121,7 +121,7 @@ namespace Splunk.Logging
         private HttpClient httpClient = null;
         private HttpEventCollectorMiddleware middleware = null;
         private HttpEventCollectorFormatter formatter = null;
-        // counter for bookkeeping the async tasks 
+        // counter for bookkeeping the async tasks
         private long activeAsyncTasksCount = 0;
 
         /// <summary>
@@ -137,11 +137,11 @@ namespace Splunk.Logging
         /// <param name="batchSizeBytes">Batch max size.</param>
         /// <param name="batchSizeCount">Max number of individual events in batch.</param>
         /// <param name="middleware">
-        /// HTTP client middleware. This allows to plug an HttpClient handler that 
+        /// HTTP client middleware. This allows to plug an HttpClient handler that
         /// intercepts logging HTTP traffic.
         /// </param>
         /// <remarks>
-        /// Zero values for the batching params mean that batching is off. 
+        /// Zero values for the batching params mean that batching is off.
         /// </remarks>
         public HttpEventCollectorSender(
             Uri uri, string token, HttpEventCollectorEventInfo.Metadata metadata,
@@ -165,7 +165,7 @@ namespace Splunk.Logging
             this.formatter = formatter;
 
             // special case - if batch interval is specified without size and count
-            // they are set to "infinity", i.e., batch may have any size 
+            // they are set to "infinity", i.e., batch may have any size
             if (this.batchInterval > 0 && this.batchSizeBytes == 0 && this.batchSizeCount == 0)
             {
                 this.batchSizeBytes = this.batchSizeCount = int.MaxValue;
@@ -195,7 +195,7 @@ namespace Splunk.Logging
         }
 
         /// <summary>
-        /// Send an event to Splunk HTTP endpoint. Actual event send is done 
+        /// Send an event to Splunk HTTP endpoint. Actual event send is done
         /// asynchronously and this method doesn't block client application.
         /// </summary>
         /// <param name="id">Event id.</param>
@@ -221,7 +221,7 @@ namespace Splunk.Logging
         }
 
         /// <summary>
-        /// Send an event to Splunk HTTP endpoint. Actual event send is done 
+        /// Send an event to Splunk HTTP endpoint. Actual event send is done
         /// asynchronously and this method doesn't block client application.
         /// </summary>
         /// <param name="timestamp">Timestamp to use.</param>
@@ -250,7 +250,7 @@ namespace Splunk.Logging
 
         private void DoSerialization(HttpEventCollectorEventInfo ei)
         {
-            
+
             string serializedEventInfo;
             if (formatter == null)
             {
@@ -263,7 +263,7 @@ namespace Splunk.Logging
                 serializedEventInfo = JsonConvert.SerializeObject(ei);
             }
 
-            // we use lock serializedEventsBatch to synchronize both 
+            // we use lock serializedEventsBatch to synchronize both
             // serializedEventsBatch and serializedEvents
             lock (eventsBatchLock)
             {
@@ -288,7 +288,7 @@ namespace Splunk.Logging
             // wait until all pending tasks are done
             while(Interlocked.CompareExchange(ref activeAsyncTasksCount, 0, 0) != 0)
             {
-                // wait for 100ms - not CPU intensive and doesn't delay process 
+                // wait for 100ms - not CPU intensive and doesn't delay process
                 // exit too much
                 Thread.Sleep(100);
             }
@@ -298,8 +298,8 @@ namespace Splunk.Logging
         /// Flush all event.
         /// </summary>
         public Task FlushAsync()
-        {            
-            return new Task(() => 
+        {
+            return new Task(() =>
             {
                 FlushSync();
             });
@@ -316,7 +316,7 @@ namespace Splunk.Logging
         }
 
         /// <summary>
-        /// Flush all batched events immediately. 
+        /// Flush all batched events immediately.
         /// </summary>
         private void Flush()
         {
@@ -324,11 +324,11 @@ namespace Splunk.Logging
             {
                 FlushInternal();
             }
-        }        
+        }
 
         private void FlushInternal()
         {
-            // FlushInternal method is called only in contexts locked on eventsBatchLock  
+            // FlushInternal method is called only in contexts locked on eventsBatchLock
             // therefore it's thread safe and doesn't need additional synchronization.
 
             if (serializedEventsBatch.Length == 0)
@@ -340,7 +340,7 @@ namespace Splunk.Logging
             else
                 FlushInternalSingleBatch(this.eventsBatch, this.serializedEventsBatch.ToString());
 
-            // we explicitly create new objects instead to clear and reuse 
+            // we explicitly create new objects instead to clear and reuse
             // the old ones because Flush works in async mode
             // and can use "previous" containers
             this.serializedEventsBatch = new StringBuilder();
@@ -377,7 +377,7 @@ namespace Splunk.Logging
             Task<HttpStatusCode> task = PostEvents(events, serializedEvents);
             task.ContinueWith((_) =>
             {
-                Interlocked.Decrement(ref activeAsyncTasksCount);            
+                Interlocked.Decrement(ref activeAsyncTasksCount);
             });
             return task;
         }
@@ -424,7 +424,7 @@ namespace Splunk.Logging
                 OnError(e);
             }
             catch (Exception e)
-            {                
+            {
                 OnError(new HttpEventCollectorException(
                     code: responseCode,
                     webException: e,

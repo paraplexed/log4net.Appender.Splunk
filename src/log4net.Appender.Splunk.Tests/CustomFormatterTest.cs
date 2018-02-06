@@ -1,7 +1,16 @@
 ﻿namespace log4net.Appender.Splunk.Tests
 {
     using System;
+    using System.Diagnostics;
+    using System.Net;
+    using System.Net.Http;
+    using System.Net.Http.Headers;
+    using System.Net.Security;
     using System.Reflection;
+    using System.Runtime.InteropServices;
+    using System.Security.Policy;
+    using System.Text;
+    using System.Threading.Tasks;
     using Core;
     using global::Splunk.Logging;
     using Newtonsoft.Json;
@@ -14,11 +23,17 @@
 
         public CustomFormatterTest()
         {
+            ServicePointManager.ServerCertificateValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
             // Step 1. Create repository object
             Hierarchy hierarchy = (Hierarchy) LogManager.GetRepository();
 
             // Step 2. Create appender
-            var splunkHttpEventCollector = new SplunkHttpEventCollector();
+            var splunkHttpEventCollector = new SplunkHttpEventCollector
+            {
+                SourceType = "json"
+            };
 
             // Step 3. Set appender properties
             splunkHttpEventCollector.ServerUrl = "https://localhost:8088";
