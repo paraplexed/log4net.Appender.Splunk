@@ -18,9 +18,14 @@ namespace log4net.Appender.Splunk
         protected override bool RequiresLayout => true;
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         public override void ActivateOptions()
+        {
+            ActivateOptions(null);
+        }
+
+        public void ActivateOptions(HttpEventCollectorSender.HttpEventCollectorFormatter formatter)
         {
             _hecSender = new HttpEventCollectorSender(
                 new Uri(ServerUrl),                                                                 // Splunk HEC URL
@@ -30,18 +35,21 @@ namespace log4net.Appender.Splunk
                 0,                                                                                  // BatchInterval - Set to 0 to disable
                 0,                                                                                  // BatchSizeBytes - Set to 0 to disable
                 0,                                                                                  // BatchSizeCount - Set to 0 to disable
-                new HttpEventCollectorResendMiddleware(RetriesOnError).Plugin                       // Resend Middleware with retry
+                new HttpEventCollectorResendMiddleware(RetriesOnError).Plugin,                      // Resend Middleware with retry
+                formatter                                                                           // Use a custom formatter before sending
             );
+
 
             // throw error on send failure
             _hecSender.OnError += exception =>
             {
                 throw new Exception($"SplunkHttpEventCollector failed to send log event to Splunk server '{new Uri(ServerUrl).Authority}' using token '{Token}'. Exception: {exception}");
             };
+
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="loggingEvent"></param>
         protected override void Append(LoggingEvent loggingEvent)
@@ -50,7 +58,7 @@ namespace log4net.Appender.Splunk
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="loggingEvent"></param>
         private void SendEventToServer(LoggingEvent loggingEvent)

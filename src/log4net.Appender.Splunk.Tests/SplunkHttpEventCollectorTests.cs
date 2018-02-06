@@ -28,7 +28,7 @@ namespace log4net.Appender.Splunk.Tests
             patternLayout.ActivateOptions();
 
             splunkHttpEventCollector.Layout = patternLayout;
-            
+
             splunkHttpEventCollector.ActivateOptions();
 
             // Step 4. Add appender to logger

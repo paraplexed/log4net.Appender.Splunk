@@ -25,13 +25,15 @@ using System.Collections.Generic;
 
 namespace Splunk.Logging
 {
+    using System.Diagnostics;
+
     /// <summary>
-    /// HTTP event collector middleware plug in that implements a simple resend policy. 
+    /// HTTP event collector middleware plug in that implements a simple resend policy.
     /// When HTTP post reply isn't an application error we try to resend the data.
     /// Usage:
     /// <code>
     /// trace.listeners.Add(new HttpEventCollectorTraceListener(
-    ///     uri: new Uri("https://localhost:8088"), 
+    ///     uri: new Uri("https://localhost:8088"),
     ///     token: "E6099437-3E1F-4793-90AB-0E5D9438A918",
     ///     new HttpEventCollectorResendMiddleware(10).Plugin // retry 10 times
     /// );
@@ -39,17 +41,17 @@ namespace Splunk.Logging
     /// </summary>
     public class HttpEventCollectorResendMiddleware
     {
-        // List of HTTP event collector server application error statuses. These statuses 
-        // indicate non-transient problems that cannot be fixed by resending the 
+        // List of HTTP event collector server application error statuses. These statuses
+        // indicate non-transient problems that cannot be fixed by resending the
         // data.
-        private static readonly HttpStatusCode[] HttpEventCollectorApplicationErrors = 
+        private static readonly HttpStatusCode[] HttpEventCollectorApplicationErrors =
         {
             HttpStatusCode.Forbidden,
             HttpStatusCode.MethodNotAllowed,
-            HttpStatusCode.BadRequest                  
+            HttpStatusCode.BadRequest
         };
 
-        private const int RetryDelayCeiling = 60 * 1000; // 1 minute     
+        private const int RetryDelayCeiling = 60 * 1000; // 1 minute
         private int retriesOnError = 0;
 
         /// <param name="retriesOnError">
@@ -67,10 +69,10 @@ namespace Splunk.Logging
         /// <param name="next"></param>
         /// <returns></returns>
         public async Task<HttpResponseMessage> Plugin(
-            string token, 
-            List<HttpEventCollectorEventInfo> events, 
+            string token,
+            List<HttpEventCollectorEventInfo> events,
             HttpEventCollectorSender.HttpEventCollectorHandler next)
-        {          
+        {
             HttpResponseMessage response = null;
             HttpStatusCode statusCode = HttpStatusCode.OK;
             Exception webException = null;
@@ -107,6 +109,7 @@ namespace Splunk.Logging
                 catch (Exception e)
                 {
                     // connectivity problem - record exception and retry
+                    Debug.WriteLine(e.Message);
                     webException = e;
                 }
                 // wait before next retry
